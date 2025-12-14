@@ -48,7 +48,6 @@ export function DeleteConfirmationDialog({
   const handleConfirm = async () => {
     try {
       await Promise.resolve(onConfirm());
-      toast.success('Delete success');
       setIsOpen(false);
       router.refresh();
     } catch (error) {

@@ -1,4 +1,5 @@
 import { TaskPriority, TaskStatus } from '@/constants/enums';
+import type { User } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -6,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { type UpdateTaskSchemaType, updateTaskSchema } from '../../_schemas';
 import { getTask } from '../_api/get-task';
+import { getUsers } from '../_api/get-users';
 import { updateTask } from '../_api/update-task';
 
 export const useUpdateTask = (
@@ -14,6 +16,22 @@ export const useUpdateTask = (
   sprintId: string,
 ) => {
   const router = useRouter();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  useEffect(() => {
+    setLoading(true);
+    const fetch = async () => {
+      try {
+        const res = await getUsers();
+        setUsers(res.data);
+      } catch (_error) {
+        toast.error('Failed to fetch users');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, []);
   const [isFetching, setIsFetching] = useState(true);
   const form = useForm<UpdateTaskSchemaType>({
     resolver: zodResolver(updateTaskSchema),
@@ -95,6 +113,7 @@ export const useUpdateTask = (
   return {
     form,
     handleSubmit,
-    isLoading: isFetching || form.formState.isSubmitting,
+    users,
+    isLoading: isFetching || loading || form.formState.isSubmitting,
   };
 };

@@ -1,4 +1,4 @@
-import { clientAxios } from '@/lib/axios';
+import { axiosInstance } from '@/lib/axios';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -22,13 +22,10 @@ export const useRegister = () => {
   const onSubmit = form.handleSubmit(
     async (data: RegisterSchema): Promise<void> => {
       try {
-        await clientAxios.post(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/register`,
-          {
-            ...data,
-            skills: data.skills.split(',').map((skill) => skill.trim()),
-          },
-        );
+        await axiosInstance.post(`/auth/register`, {
+          ...data,
+          skills: data.skills.split(',').map((skill) => skill.trim()),
+        });
         toast.success('User registered successfully');
         form.reset();
         router.push('/projects');

@@ -1,25 +1,6 @@
-import { serverAxios } from '@/lib/axios';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-
-const token = async () => {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-  if (!token) {
-    return redirect('/login');
-  }
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers.cookie = `token=${token}`;
-  }
-
-  return headers;
-};
+import { axiosInstance } from '@/lib/axios';
 
 export const getTasks = async (sprintId: string) => {
-  const headers = await token();
-  const response = await serverAxios.get(`/sprints/${sprintId}/tasks`, {
-    headers,
-  });
+  const response = await axiosInstance.get(`/sprints/${sprintId}/tasks`, {});
   return response.data;
 };

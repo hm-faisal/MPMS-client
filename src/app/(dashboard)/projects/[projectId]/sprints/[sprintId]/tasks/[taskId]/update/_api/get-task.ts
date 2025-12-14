@@ -1,11 +1,9 @@
-import { clientAxios } from '@/lib/axios';
+import { axiosInstance } from '@/lib/axios';
 import { toast } from 'sonner';
 
 export const getTask = async (taskId: string) => {
   try {
-    const res = await clientAxios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks/${taskId}`,
-    );
+    const res = await axiosInstance.get(`/tasks/${taskId}`);
     return res.data;
   } catch (error) {
     if (error instanceof Error) {

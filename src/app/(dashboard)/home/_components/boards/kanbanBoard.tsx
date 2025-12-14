@@ -20,8 +20,12 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { AxiosError } from 'axios';
 import { Calendar, GripVertical, User } from 'lucide-react';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { getTasks } from '../../_api/getTasks';
 import { updateTask } from '../../_api/updateTask';
 
 // Status config
@@ -161,22 +165,60 @@ function KanbanColumn({
   );
 }
 
-export function KanbanBoard({ tasks }: { tasks: TaskWithSprintUser[] }) {
+export function KanbanBoard() {
+  const router = useRouter();
+  const [tasks, setTasks] = useState<TaskWithSprintUser[]>([]);
+  const [items, setItems] = useState<Record<TaskStatus, TaskWithSprintUser[]>>({
+    [TaskStatus.TODO]: [],
+    [TaskStatus.IN_PROGRESS]: [],
+    [TaskStatus.REVIEW]: [],
+    [TaskStatus.DONE]: [],
+  });
+  const [loading, setLoading] = useState<boolean>(true);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [items, setItems] = useState<Record<TaskStatus, TaskWithSprintUser[]>>(
-    () => {
-      const initial: Record<TaskStatus, TaskWithSprintUser[]> = {
-        [TaskStatus.TODO]: [],
-        [TaskStatus.IN_PROGRESS]: [],
-        [TaskStatus.REVIEW]: [],
-        [TaskStatus.DONE]: [],
-      };
-      tasks.forEach((task) => {
-        initial[task.status].push(task);
-      });
-      return initial;
-    },
-  );
+
+  // Fetch tasks on mount
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setLoading(true);
+        const res = await getTasks();
+        setTasks(res.data);
+        if (res.code === 401) {
+          toast.error('Unauthorized. Please log in again.');
+          router.push('/login');
+          return;
+        }
+      } catch (error) {
+        if (error instanceof AxiosError) {
+          if (error.status === 401) {
+            toast.error('Unauthorized. Please log in again.');
+            router.push('/login');
+          }
+        }
+        toast.error('Failed to fetch tasks');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
+  }, [router.push]);
+
+  // Sync items when tasks change
+  useEffect(() => {
+    const newItems: Record<TaskStatus, TaskWithSprintUser[]> = {
+      [TaskStatus.TODO]: [],
+      [TaskStatus.IN_PROGRESS]: [],
+      [TaskStatus.REVIEW]: [],
+      [TaskStatus.DONE]: [],
+    };
+    tasks.forEach((task) => {
+      if (newItems[task.status]) {
+        newItems[task.status].push(task);
+      }
+    });
+    setItems(newItems);
+  }, [tasks]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -207,16 +249,21 @@ export function KanbanBoard({ tasks }: { tasks: TaskWithSprintUser[] }) {
     if (typeof overId === 'string' && STATUSES.includes(overId as TaskStatus)) {
       const newStatus = overId as TaskStatus;
       if (activeTask.status !== newStatus) {
+        // Optimistic UI update
         const newItems = { ...items };
         newItems[activeTask.status] = newItems[activeTask.status].filter(
           (t) => t._id !== active.id,
         );
-        activeTask.status = newStatus;
-        newItems[newStatus] = [...newItems[newStatus], activeTask];
+        const updatedTask = { ...activeTask, status: newStatus };
+        newItems[newStatus] = [...newItems[newStatus], updatedTask];
         setItems(newItems);
 
+        // Sync with backend
         updateTask(activeTask._id, { status: newStatus }).catch((err) => {
-          console.error('Failed to update task status:', err);
+          // Revert on error
+          setItems(items);
+          toast.error('Failed to update task status');
+          console.error('Update task error:', err);
         });
       }
     }
@@ -225,6 +272,14 @@ export function KanbanBoard({ tasks }: { tasks: TaskWithSprintUser[] }) {
   const handleDragEnd = () => {
     setActiveId(null);
   };
+
+  if (loading) {
+    return (
+      <div className="w-full flex items-center justify-center py-20">
+        <span className="text-sm text-muted-foreground">Loading tasks...</span>
+      </div>
+    );
+  }
 
   return (
     <DndContext

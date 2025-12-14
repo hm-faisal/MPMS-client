@@ -28,15 +28,44 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
+import { AxiosError } from 'axios';
 import { ChevronDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
+import { toast } from 'sonner';
 import { columns } from '.';
+import { getSprints } from '../../_api';
 
-interface Props {
-  data: Sprint[];
-}
-
-export function SprintsDataTable({ data }: Props) {
+export function SprintsDataTable() {
+  const router = useRouter();
+  const [sprints, setSprints] = React.useState<Sprint[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  React.useEffect(() => {
+    setLoading(true);
+    const fetch = async () => {
+      try {
+        const res = await getSprints();
+        setSprints(res.data);
+        if (res.code === 401) {
+          toast.error('Unauthorized. Please log in again.');
+          router.push('/login');
+          return;
+        }
+      } catch (error) {
+        if (error instanceof AxiosError) {
+          if (error.status === 401) {
+            toast.error('Unauthorized. Please log in again.');
+            router.push('/login');
+            return;
+          }
+        }
+        toast.error('Failed to fetch sprints');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, [router.push]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -46,7 +75,7 @@ export function SprintsDataTable({ data }: Props) {
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
-    data,
+    data: sprints,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -63,6 +92,16 @@ export function SprintsDataTable({ data }: Props) {
       rowSelection,
     },
   });
+
+  if (loading) {
+    return (
+      <div className="w-full flex items-center justify-center py-10">
+        <span className="text-sm text-muted-foreground">
+          Loading sprints...
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-background text-foreground">

@@ -1,26 +1,7 @@
-import { serverAxios } from '@/lib/axios';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { axiosInstance } from '@/lib/axios';
 
-const token = async () => {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-  if (!token) {
-    return redirect('/login');
-  }
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers.cookie = `token=${token}`;
-  }
-
-  return headers;
-};
-
-export const getProjectData = async (projectId: string) => {
-  const headers = await token();
-  const response = await serverAxios.get(`/projects/${projectId}`, {
-    headers,
-  });
-  const data = response.data.data;
+export const getProject = async (projectId: string) => {
+  const response = await axiosInstance.get(`/projects/${projectId}`);
+  const data = response.data;
   return data;
 };

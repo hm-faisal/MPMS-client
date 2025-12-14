@@ -32,15 +32,32 @@ import {
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
+import { toast } from 'sonner';
+import { getTasks } from '../../_api';
 import { columns } from './columns';
 
 interface Props {
-  data: TaskWithSprintUser[];
   sprintId: string;
   projectId: string;
 }
 
-export function TasksDataTable({ data, sprintId, projectId }: Props) {
+export function TasksDataTable({ sprintId, projectId }: Props) {
+  const [tasks, setTasks] = React.useState<TaskWithSprintUser[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  React.useEffect(() => {
+    setLoading(true);
+    const fetch = async () => {
+      try {
+        const res = await getTasks(sprintId);
+        setTasks(res.data);
+      } catch (_error) {
+        toast.error('Failed to fetch tasks');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, [sprintId]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -50,7 +67,7 @@ export function TasksDataTable({ data, sprintId, projectId }: Props) {
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
-    data,
+    data: tasks,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -67,6 +84,10 @@ export function TasksDataTable({ data, sprintId, projectId }: Props) {
       rowSelection,
     },
   });
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="w-full bg-background text-foreground">

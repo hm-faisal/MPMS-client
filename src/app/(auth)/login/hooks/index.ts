@@ -1,4 +1,4 @@
-import { clientAxios } from '@/lib/axios';
+import { axiosInstance } from '@/lib/axios';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -17,10 +17,7 @@ export const useLogin = () => {
 
   const onSubmit = form.handleSubmit(async (data: LoginSchema) => {
     try {
-      const response = await clientAxios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`,
-        data
-      );
+      const response = await axiosInstance.post('/auth/login', data);
       if (response.status === 200) {
         toast.success('Login successful');
         router.push('/home');

@@ -1,12 +1,9 @@
-import { getProjects } from './_apis';
 import { ProjectsDataTable } from './_components/table';
 
-const Page = async () => {
-  const projects = await getProjects();
-
+const Page = () => {
   return (
     <div>
-      <ProjectsDataTable data={projects.data} />
+      <ProjectsDataTable />
     </div>
   );
 };

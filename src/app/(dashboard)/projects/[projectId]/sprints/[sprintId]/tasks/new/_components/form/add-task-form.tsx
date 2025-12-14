@@ -16,17 +16,18 @@ import {
 } from '@/components/ui/card';
 import { FieldGroup } from '@/components/ui/field';
 import { TaskPriority, TaskStatus } from '@/constants/enums';
-import type { User } from '@/types';
 import { useAddTask } from '../../_hooks/use-add-task';
 
 interface TaskFormProps {
   sprintId: string;
-  users: User[];
   projectId: string;
 }
 
-export function AddTaskForm({ sprintId, users, projectId }: TaskFormProps) {
-  const { form, handleSubmit, isLoading } = useAddTask(projectId, sprintId);
+export function AddTaskForm({ sprintId, projectId }: TaskFormProps) {
+  const { form, handleSubmit, isLoading, users } = useAddTask(
+    projectId,
+    sprintId,
+  );
 
   return (
     <form onSubmit={handleSubmit}>

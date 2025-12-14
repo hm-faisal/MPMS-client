@@ -16,23 +16,20 @@ import {
 } from '@/components/ui/card';
 import { FieldGroup } from '@/components/ui/field';
 import { TaskPriority, TaskStatus } from '@/constants/enums';
-import type { User } from '@/types';
 import { useUpdateTask } from '../../_hooks/use-update';
 
 interface UpdateTaskFormProps {
   taskId: string;
   projectId: string;
   sprintId: string;
-  users: User[];
 }
 
 export function UpdateTaskForm({
   taskId,
   projectId,
   sprintId,
-  users,
 }: UpdateTaskFormProps) {
-  const { form, handleSubmit, isLoading } = useUpdateTask(
+  const { users, form, handleSubmit, isLoading } = useUpdateTask(
     taskId,
     projectId,
     sprintId,

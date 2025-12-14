@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import type { Sprint } from '@/types';
+import type { SprintWithProject } from '@/types';
 import {
   Calendar,
   CheckCircle2,
@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { getSprintData } from '../_api';
 
 const formatDate = (date: Date | string) => {
   return new Intl.DateTimeFormat('en-US', {
@@ -65,13 +68,46 @@ const getPriorityColor = (priority: string) => {
 };
 
 export default function SprintDetailsPage({
-  sprint,
+  sprintId,
   projectId,
 }: {
-  sprint: Sprint;
+  sprintId: string;
   projectId: string;
 }) {
+  const [sprint, setSprint] = useState<SprintWithProject | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  useEffect(() => {
+    setLoading(true);
+    const fetch = async () => {
+      try {
+        const res = await getSprintData(sprintId);
+        setSprint(res.data);
+      } catch (_error) {
+        toast.error('Failed to fetch sprint');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, [sprintId]);
   const router = useRouter();
+
+  if (!sprint) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        no sprint found on this project
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
   const totalEstimate = sprint.tasks.reduce(
     (sum, task) => sum + (task.estimate || 0),
     0,
@@ -107,14 +143,18 @@ export default function SprintDetailsPage({
                 <h1 className="text-balance font-sans text-4xl font-semibold leading-tight tracking-tight text-foreground lg:text-5xl">
                   {sprint.title}
                 </h1>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="gap-2 opacity-0 transition-opacity group-hover:opacity-100"
+                <Link
+                  href={`/projects/${projectId}/sprints/${sprint._id}/edit`}
+                  className={buttonVariants({
+                    size: 'sm',
+                    variant: 'ghost',
+                    className:
+                      'gap-2 opacity-0 transition-opacity group-hover:opacity-100',
+                  })}
                 >
                   <Pencil className="h-4 w-4" />
                   Edit Sprint
-                </Button>
+                </Link>
               </div>
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="gap-1.5">

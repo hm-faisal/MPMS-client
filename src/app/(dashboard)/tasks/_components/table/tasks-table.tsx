@@ -28,15 +28,44 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
+import { AxiosError } from 'axios';
 import { ChevronDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
+import { toast } from 'sonner';
 import { columns } from '.';
+import { getTasks } from '../../_api';
 
-interface Props {
-  data: TaskWithSprintUser[];
-}
-
-export function TasksDataTable({ data }: Props) {
+export function TasksDataTable() {
+  const router = useRouter();
+  const [tasks, setTasks] = React.useState<TaskWithSprintUser[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  React.useEffect(() => {
+    setLoading(true);
+    const fetch = async () => {
+      try {
+        const res = await getTasks();
+        setTasks(res.data);
+        if (res.code === 401) {
+          toast.error('Unauthorized. Please log in again.');
+          router.push('/login');
+          return;
+        }
+      } catch (error) {
+        if (error instanceof AxiosError) {
+          if (error.status === 401) {
+            toast.error('Unauthorized. Please log in again.');
+            router.push('/login');
+            return;
+          }
+        }
+        toast.error('Failed to fetch tasks');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, [router.push]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -46,7 +75,7 @@ export function TasksDataTable({ data }: Props) {
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
-    data,
+    data: tasks,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -63,6 +92,14 @@ export function TasksDataTable({ data }: Props) {
       rowSelection,
     },
   });
+
+  if (loading) {
+    return (
+      <div className="w-full flex items-center justify-center py-10">
+        <span className="text-sm text-muted-foreground">Loading tasks...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-background text-foreground">

@@ -1,4 +1,4 @@
-import { clientAxios } from '@/lib/axios';
+import { axiosInstance } from '@/lib/axios';
 import { toast } from 'sonner';
 import type { UpdateTaskSchemaType } from '../_schemas/update-task.schema';
 
@@ -7,10 +7,7 @@ export const updateTask = async (
   data: UpdateTaskSchemaType,
 ) => {
   try {
-    const res = await clientAxios.patch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks/${taskId}`,
-      data,
-    );
+    const res = await axiosInstance.patch(`/tasks/${taskId}`, data);
     return res;
   } catch (error) {
     if (error instanceof Error) {

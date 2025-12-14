@@ -14,6 +14,8 @@ import type { User } from '@/types';
 import type { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown, Eye, MoreHorizontal, Pencil, Trash } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import { deleteUser } from '../../_api';
 
 // Optional: Helper to format role display
 const formatRole = (role: string): string => {
@@ -194,7 +196,15 @@ export const columns: ColumnDef<User>[] = [
                 title={`Delete user "${user.name}"?`}
                 description="This action cannot be undone. All associated data may be affected."
                 onConfirm={async () => {
-                  // await deleteUser(user._id);
+                  const res = await deleteUser(user._id);
+                  if (res.status === 204) {
+                    toast.success('User deleted successfully');
+                  }
+                  if (res.status === 403) {
+                    toast.error(
+                      'You do not have permission to delete this user.',
+                    );
+                  }
                 }}
               >
                 <Button

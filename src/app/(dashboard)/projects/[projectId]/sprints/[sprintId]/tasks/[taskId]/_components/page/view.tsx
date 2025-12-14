@@ -15,6 +15,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { getTaskData } from '../../_api/get-task';
 
 const formatDate = (date: Date | string) => {
   return new Intl.DateTimeFormat('en-US', {
@@ -59,12 +62,41 @@ const getPriorityColor = (priority: string) => {
   }
 };
 
-export default function TaskDetailsPage({
-  task,
-}: {
-  task: TaskWithSprintUser;
-}) {
+export default function TaskDetailsPage({ taskId }: { taskId: string }) {
   const router = useRouter();
+  const [task, setTasks] = useState<TaskWithSprintUser | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  useEffect(() => {
+    setLoading(true);
+    const fetch = async () => {
+      try {
+        const res = await getTaskData(taskId);
+        setTasks(res.data);
+      } catch (_error) {
+        toast.error('Failed to fetch tasks');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, [taskId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!task) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Task not found.
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">

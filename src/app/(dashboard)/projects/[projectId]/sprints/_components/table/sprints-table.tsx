@@ -32,14 +32,31 @@ import {
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
+import { toast } from 'sonner';
 import { columns } from '.';
+import { getSprints } from '../../_api';
 
 interface Props {
-  data: Sprint[];
   projectId: string;
 }
 
-export function SprintsDataTable({ data, projectId }: Props) {
+export function SprintsDataTable({ projectId }: Props) {
+  const [sprints, setSprints] = React.useState<Sprint[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  React.useEffect(() => {
+    setLoading(true);
+    const fetch = async () => {
+      try {
+        const res = await getSprints(projectId);
+        setSprints(res.data.sprints);
+      } catch (_error) {
+        toast.error('Failed to fetch sprints');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, [projectId]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -49,7 +66,7 @@ export function SprintsDataTable({ data, projectId }: Props) {
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
-    data,
+    data: sprints,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -66,6 +83,14 @@ export function SprintsDataTable({ data, projectId }: Props) {
       rowSelection,
     },
   });
+
+  if (loading) {
+    return (
+      <div className="w-full flex items-center justify-center py-20">
+        <span className="text-sm text-muted-foreground">Loading...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-background text-foreground">

@@ -29,12 +29,47 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
+import { AxiosError } from 'axios';
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
+import { toast } from 'sonner';
 import { columns } from '.';
+import { getProjects } from '../../_apis';
 
-export function ProjectsDataTable({ data }: { data: Project[] }) {
+export function ProjectsDataTable() {
+  const router = useRouter();
+  const [projects, setProjects] = React.useState<Project[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+
+  React.useEffect(() => {
+    setLoading(true);
+    try {
+      const fetch = async () => {
+        const res = await getProjects();
+        setProjects(res.data);
+        if (res.code === 401) {
+          toast.error('Unauthorized. Please log in again.');
+          router.push('/login');
+          return;
+        }
+      };
+      fetch();
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        if (error.status === 401) {
+          toast.error('Unauthorized. Please log in again.');
+          router.push('/login');
+          return;
+        }
+      }
+      toast.error('Failed to fetch projects:');
+    } finally {
+      setLoading(false);
+    }
+  }, [router.push]);
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -44,7 +79,7 @@ export function ProjectsDataTable({ data }: { data: Project[] }) {
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
-    data,
+    data: projects,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -61,6 +96,10 @@ export function ProjectsDataTable({ data }: { data: Project[] }) {
       rowSelection,
     },
   });
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="w-full bg-background text-foreground">
